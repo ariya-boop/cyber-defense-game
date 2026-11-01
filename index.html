@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CyberDefend: Packet Wars | Cybersecurity Arcade Game</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Bricolage+Grotesque:wght@700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: #070a10;
+      color: #f1f5f9;
+      font-family: 'JetBrains Mono', monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding: 20px;
+    }
+
+    .game-container {
+      position: relative;
+      background: #0d121d;
+      border: 2px solid #232f46;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 30px rgba(59, 130, 246, 0.15);
+      padding: 20px;
+      max-width: 900px;
+      width: 100%;
+    }
+
+    .game-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #232f46;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .title-box h1 {
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: 1.6rem;
+      background: linear-gradient(90deg, #38bdf8, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.02em;
+    }
+
+    .title-box p {
+      font-size: 0.8rem;
+      color: #94a3b8;
+    }
+
+    .hud {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      font-size: 0.85rem;
+    }
+
+    .hud-item {
+      background: #151d2d;
+      border: 1px solid #232f46;
+      padding: 6px 14px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .hud-val {
+      font-weight: 700;
+      color: #38bdf8;
+    }
+
+    .health-bar {
+      width: 80px;
+      height: 10px;
+      background: #232f46;
+      border-radius: 5px;
+      overflow: hidden;
+      display: inline-block;
+    }
+
+    .health-fill {
+      height: 100%;
+      background: #10b981;
+      width: 100%;
+      transition: width 0.2s;
+    }
+
+    canvas {
+      background: #0a0e17;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      display: block;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 16 / 9;
+      cursor: crosshair;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 12px;
+      margin-top: 15px;
+      flex-wrap: wrap;
+    }
+
+    .tower-btn {
+      flex: 1;
+      min-width: 170px;
+      background: #151d2d;
+      border: 1px solid #232f46;
+      border-radius: 8px;
+      padding: 10px;
+      color: #f1f5f9;
+      font-family: 'JetBrains Mono', monospace;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s;
+    }
+
+    .tower-btn:hover, .tower-btn.active {
+      border-color: #38bdf8;
+      background: #1a2438;
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
+    }
+
+    .tower-name {
+      font-weight: 700;
+      font-size: 0.85rem;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .tower-cost {
+      color: #38bdf8;
+    }
+
+    .tower-desc {
+      font-size: 0.72rem;
+      color: #94a3b8;
+      margin-top: 4px;
+    }
+
+    .game-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(7, 10, 16, 0.88);
+      backdrop-filter: blur(4px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      z-index: 10;
+    }
+
+    .game-overlay.hidden { display: none; }
+
+    .game-overlay h2 {
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: 2.2rem;
+      margin-bottom: 12px;
+    }
+
+    .game-overlay p {
+      color: #94a3b8;
+      max-width: 450px;
+      text-align: center;
+      margin-bottom: 24px;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .start-btn {
+      background: linear-gradient(135deg, #2563eb, #38bdf8);
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      font-size: 1rem;
+      font-weight: 700;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: 'JetBrains Mono', monospace;
+      box-shadow: 0 4px 20px rgba(37, 99, 235, 0.4);
+      transition: transform 0.15s;
+    }
+
+    .start-btn:hover { transform: scale(1.05); }
+
+    .back-link {
+      margin-top: 15px;
+      font-size: 0.85rem;
+      color: #64748b;
+      text-decoration: none;
+    }
+    .back-link:hover { color: #38bdf8; }
+  </style>
+</head>
+<body>
+
+  <div class="game-container">
+    <div class="game-header">
+      <div class="title-box">
+        <h1>CyberDefend: Packet Wars</h1>
+        <p>Defend the Core Database from Botnets, Phishing & Adversarial Exploits</p>
+      </div>
+      <div class="hud">
+        <div class="hud-item">
+          <span>CREDITS:</span>
+          <span class="hud-val" id="creditsVal">150</span>
+        </div>
+        <div class="hud-item">
+          <span>WAVE:</span>
+          <span class="hud-val" id="waveVal">1</span>
+        </div>
+        <div class="hud-item">
+          <span>HEALTH:</span>
+          <div class="health-bar">
+            <div class="health-fill" id="healthFill"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <canvas id="gameCanvas" width="850" height="478"></canvas>
+
+    <!-- Toolbar for placing countermeasures -->
+    <div class="toolbar">
+      <button class="tower-btn active" data-type="firewall">
+        <div class="tower-name"><span>1. FIREWALL</span> <span class="tower-cost">50⚡</span></div>
+        <div class="tower-desc">Rapid laser beam. Effective against Port Scanners.</div>
+      </button>
+      <button class="tower-btn" data-type="ratelimiter">
+        <div class="tower-name"><span>2. RATE LIMITER</span> <span class="tower-cost">80⚡</span></div>
+        <div class="tower-desc">AoE pulse wave. Slows & crushes Botnet swarms.</div>
+      </button>
+      <button class="tower-btn" data-type="ai_inspector">
+        <div class="tower-name"><span>3. AI INSPECTOR</span> <span class="tower-cost">120⚡</span></div>
+        <div class="tower-desc">Neural burst. High damage to Phishing payloads.</div>
+      </button>
+      <button class="tower-btn" data-type="honeypot">
+        <div class="tower-name"><span>4. HONEYPOT</span> <span class="tower-cost">150⚡</span></div>
+        <div class="tower-desc">Traps Adversarial exploits & stalls boss waves.</div>
+      </button>
+    </div>
+
+    <!-- Start / Game Over Modal -->
+    <div class="game-overlay" id="overlay">
+      <h2 id="overlayTitle">CYBERDEFEND v1.0</h2>
+      <p id="overlayDesc">Deploy defensive network nodes onto the grid to neutralize incoming malicious packets before they breach the core database server.</p>
+      <button class="start-btn" id="startBtn">INITIALIZE DEFENSES</button>
+    </div>
+  </div>
+
+  <a href="../portfolio-site/index.html" class="back-link">&larr; Return to Portfolio Site</a>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const creditsVal = document.getElementById('creditsVal');
+    const waveVal = document.getElementById('waveVal');
+    const healthFill = document.getElementById('healthFill');
+    const overlay = document.getElementById('overlay');
+    const overlayTitle = document.getElementById('overlayTitle');
+    const overlayDesc = document.getElementById('overlayDesc');
+    const startBtn = document.getElementById('startBtn');
+    const towerBtns = document.querySelectorAll('.tower-btn');
+
+    // Audio synthesizer using Web Audio API
+    let audioCtx = null;
+    function initAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    function playBeep(freq, type='sine', duration=0.1) {
+      if (!audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch(e){}
+    }
+
+    // Grid path definition
+    const path = [
+      {x: 0, y: 120},
+      {x: 240, y: 120},
+      {x: 240, y: 360},
+      {x: 520, y: 360},
+      {x: 520, y: 180},
+      {x: 850, y: 180}
+    ];
+
+    // Game state
+    let state = {
+      running: false,
+      credits: 150,
+      health: 100,
+      wave: 1,
+      selectedTower: 'firewall',
+      towers: [],
+      enemies: [],
+      projectiles: [],
+      particles: [],
+      spawnTimer: 0,
+      enemiesToSpawn: 10,
+      waveInProgress: false
+    };
+
+    const TOWER_CONFIGS = {
+      firewall: { cost: 50, range: 110, rate: 30, color: '#38bdf8', damage: 18, name: 'Firewall' },
+      ratelimiter: { cost: 80, range: 130, rate: 50, color: '#f59e0b', damage: 35, aoe: true, name: 'Rate Limiter' },
+      ai_inspector: { cost: 120, range: 150, rate: 25, color: '#818cf8', damage: 28, name: 'AI Inspector' },
+      honeypot: { cost: 150, range: 90, rate: 60, color: '#10b981', damage: 70, name: 'Honeypot' }
+    };
+
+    const ENEMY_TYPES = [
+      { type: 'scan', name: 'Port Scanner', hp: 45, speed: 1.8, color: '#facc15', reward: 15 },
+      { type: 'brute', name: 'Brute-Force Bot', hp: 120, speed: 1.1, color: '#ef4444', reward: 25 },
+      { type: 'phish', name: 'Phishing Payload', hp: 90, speed: 1.5, color: '#c084fc', reward: 30 },
+      { type: 'exploit', name: 'Adversarial Exploit', hp: 260, speed: 0.9, color: '#06b6d4', reward: 55 }
+    ];
+
+    // Select tower from buttons
+    towerBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        towerBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.selectedTower = btn.dataset.type;
+      });
+    });
+
+    // Place tower on canvas click
+    canvas.addEventListener('click', (e) => {
+      if (!state.running) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+      const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+      const cfg = TOWER_CONFIGS[state.selectedTower];
+      if (state.credits < cfg.cost) {
+        playBeep(180, 'sawtooth', 0.15);
+        return;
+      }
+
+      // Check distance from path to avoid blocking
+      for (let i = 0; i < path.length - 1; i++) {
+        const p1 = path[i], p2 = path[i+1];
+        const dist = distToSegment({x, y}, p1, p2);
+        if (dist < 32) return; // Too close to network path
+      }
+
+      // Check distance from other towers
+      for (const t of state.towers) {
+        if (Math.hypot(t.x - x, t.y - y) < 36) return;
+      }
+
+      state.credits -= cfg.cost;
+      creditsVal.textContent = state.credits;
+      state.towers.push({
+        x, y,
+        type: state.selectedTower,
+        range: cfg.range,
+        rate: cfg.rate,
+        cooldown: 0,
+        color: cfg.color,
+        damage: cfg.damage
+      });
+      playBeep(520, 'sine', 0.1);
+    });
+
+    function distToSegment(p, v, w) {
+      const l2 = (v.x - w.x)**2 + (v.y - w.y)**2;
+      if (l2 === 0) return Math.hypot(p.x - v.x, p.y - v.y);
+      let t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
+      t = Math.max(0, Math.min(1, t));
+      return Math.hypot(p.x - (v.x + t * (w.x - v.x)), p.y - (v.y + t * (w.y - v.y)));
+    }
+
+    startBtn.addEventListener('click', () => {
+      initAudio();
+      overlay.classList.add('hidden');
+      resetGame();
+      state.running = true;
+      requestAnimationFrame(gameLoop);
+    });
+
+    function resetGame() {
+      state.credits = 160;
+      state.health = 100;
+      state.wave = 1;
+      state.towers = [];
+      state.enemies = [];
+      state.projectiles = [];
+      state.particles = [];
+      state.enemiesToSpawn = 8;
+      creditsVal.textContent = state.credits;
+      waveVal.textContent = state.wave;
+      healthFill.style.width = '100%';
+      healthFill.style.background = '#10b981';
+    }
+
+    function spawnEnemy() {
+      const rand = Math.random();
+      let template = ENEMY_TYPES[0];
+      if (state.wave >= 2 && rand > 0.45) template = ENEMY_TYPES[1];
+      if (state.wave >= 3 && rand > 0.70) template = ENEMY_TYPES[2];
+      if (state.wave >= 4 && rand > 0.85) template = ENEMY_TYPES[3];
+
+      state.enemies.push({
+        x: path[0].x,
+        y: path[0].y,
+        pathIndex: 0,
+        hp: template.hp * (1 + (state.wave - 1) * 0.25),
+        maxHp: template.hp * (1 + (state.wave - 1) * 0.25),
+        speed: template.speed,
+        color: template.color,
+        reward: template.reward,
+        type: template.type,
+        radius: 12
+      });
+    }
+
+    // Main Game Loop
+    function gameLoop() {
+      if (!state.running) return;
+      update();
+      render();
+      requestAnimationFrame(gameLoop);
+    }
+
+    function update() {
+      // Passive credit trickle
+      if (Math.random() < 0.05) {
+        state.credits += 1;
+        creditsVal.textContent = state.credits;
+      }
+
+      // Spawning logic
+      if (state.enemiesToSpawn > 0) {
+        state.spawnTimer++;
+        if (state.spawnTimer > 55 - Math.min(state.wave * 3, 30)) {
+          spawnEnemy();
+          state.enemiesToSpawn--;
+          state.spawnTimer = 0;
+        }
+      } else if (state.enemies.length === 0) {
+        // Next wave!
+        state.wave++;
+        waveVal.textContent = state.wave;
+        state.enemiesToSpawn = 8 + state.wave * 4;
+        state.credits += 60;
+        creditsVal.textContent = state.credits;
+        playBeep(660, 'sine', 0.25);
+      }
+
+      // Update enemies along path
+      for (let i = state.enemies.length - 1; i >= 0; i--) {
+        const e = state.enemies[i];
+        const target = path[e.pathIndex + 1];
+        if (!target) {
+          // Reached database server!
+          state.health -= 15;
+          healthFill.style.width = Math.max(0, state.health) + '%';
+          if (state.health <= 35) healthFill.style.background = '#ef4444';
+          playBeep(120, 'sawtooth', 0.3);
+          state.enemies.splice(i, 1);
+
+          if (state.health <= 0) {
+            endGame(false);
+            return;
+          }
+          continue;
+        }
+
+        const dx = target.x - e.x;
+        const dy = target.y - e.y;
+        const dist = Math.hypot(dx, dy);
+
+        if (dist < e.speed) {
+          e.pathIndex++;
+        } else {
+          e.x += (dx / dist) * e.speed;
+          e.y += (dy / dist) * e.speed;
+        }
+      }
+
+      // Towers aim & shoot
+      for (const t of state.towers) {
+        t.cooldown--;
+        if (t.cooldown <= 0) {
+          // Find closest enemy in range
+          let target = null;
+          let minD = t.range;
+          for (const e of state.enemies) {
+            const d = Math.hypot(e.x - t.x, e.y - t.y);
+            if (d < minD) {
+              minD = d;
+              target = e;
+            }
+          }
+
+          if (target) {
+            t.cooldown = t.rate;
+            state.projectiles.push({
+              x: t.x, y: t.y,
+              target: target,
+              speed: 9,
+              color: t.color,
+              damage: t.damage,
+              type: t.type
+            });
+            playBeep(440, 'triangle', 0.05);
+          }
+        }
+      }
+
+      // Update projectiles
+      for (let i = state.projectiles.length - 1; i >= 0; i--) {
+        const p = state.projectiles[i];
+        if (!state.enemies.includes(p.target)) {
+          state.projectiles.splice(i, 1);
+          continue;
+        }
+
+        const dx = p.target.x - p.x;
+        const dy = p.target.y - p.y;
+        const dist = Math.hypot(dx, dy);
+
+        if (dist < p.speed) {
+          // Hit target
+          p.target.hp -= p.damage;
+          createParticles(p.x, p.y, p.color, 6);
+
+          if (p.target.hp <= 0) {
+            // Neutralized!
+            const idx = state.enemies.indexOf(p.target);
+            if (idx !== -1) {
+              state.credits += p.target.reward;
+              creditsVal.textContent = state.credits;
+              createParticles(p.target.x, p.target.y, p.target.color, 14);
+              playBeep(260, 'sine', 0.1);
+              state.enemies.splice(idx, 1);
+            }
+          }
+          state.projectiles.splice(i, 1);
+        } else {
+          p.x += (dx / dist) * p.speed;
+          p.y += (dy / dist) * p.speed;
+        }
+      }
+
+      // Update particles
+      for (let i = state.particles.length - 1; i >= 0; i--) {
+        const pt = state.particles[i];
+        pt.x += pt.vx;
+        pt.y += pt.vy;
+        pt.life--;
+        if (pt.life <= 0) state.particles.splice(i, 1);
+      }
+    }
+
+    function createParticles(x, y, color, count) {
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const spd = Math.random() * 3 + 1;
+        state.particles.push({
+          x, y,
+          vx: Math.cos(angle) * spd,
+          vy: Math.sin(angle) * spd,
+          color,
+          life: Math.floor(Math.random() * 15 + 10)
+        });
+      }
+    }
+
+    function endGame(won) {
+      state.running = false;
+      overlayTitle.textContent = won ? 'NETWORK SECURED' : 'DATA BREACH DETECTED';
+      overlayTitle.style.color = won ? '#10b981' : '#ef4444';
+      overlayDesc.textContent = won
+        ? `Incredible defense! You neutralized all threat waves and held the core database secure.`
+        : `Defenses collapsed on Wave ${state.wave}. Brute-force and adversarial payloads breached the core server.`;
+      startBtn.textContent = 'RETRY DEFENSE';
+      overlay.classList.remove('hidden');
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw subtle grid
+      ctx.strokeStyle = 'rgba(30, 41, 59, 0.4)';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < canvas.width; x += 30) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+      }
+      for (let y = 0; y < canvas.height; y += 30) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+      }
+
+      // Draw network pipeline (path)
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 36;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(path[0].x, path[0].y);
+      for (let i = 1; i < path.length; i++) ctx.lineTo(path[i].x, path[i].y);
+      ctx.stroke();
+
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
+      ctx.lineWidth = 6;
+      ctx.stroke();
+
+      // Draw Core Server at the end of the path
+      const end = path[path.length - 1];
+      ctx.fillStyle = '#10b981';
+      ctx.beginPath();
+      ctx.arc(end.x - 15, end.y, 22, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#070a10';
+      ctx.font = 'bold 11px JetBrains Mono';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('DB', end.x - 15, end.y);
+
+      // Draw Towers
+      for (const t of state.towers) {
+        // Base
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, 16, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Node center
+        ctx.fillStyle = t.color;
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, 10, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Subtle range ring
+        ctx.strokeStyle = t.color;
+        ctx.globalAlpha = 0.08;
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, t.range, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalAlpha = 1.0;
+      }
+
+      // Draw Enemies
+      for (const e of state.enemies) {
+        ctx.fillStyle = e.color;
+        ctx.beginPath();
+        ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // HP bar above enemy
+        const barW = 20;
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(e.x - barW/2, e.y - e.radius - 8, barW, 4);
+        ctx.fillStyle = '#10b981';
+        ctx.fillRect(e.x - barW/2, e.y - e.radius - 8, barW * (e.hp / e.maxHp), 4);
+      }
+
+      // Draw Projectiles
+      for (const p of state.projectiles) {
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Draw Particles
+      for (const pt of state.particles) {
+        ctx.fillStyle = pt.color;
+        ctx.globalAlpha = pt.life / 25;
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
+      }
+    }
+  </script>
+</body>
+</html>
